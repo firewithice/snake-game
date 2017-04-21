@@ -1,0 +1,249 @@
+
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="UTF-8">
+		<title>贪吃蛇5</title>
+		<style>
+			table{
+				border: solid 1px black;
+			}
+			td{
+				height: 10px;
+				width: 10px;
+			}
+			table{
+				margin: 50px auto;
+			}
+		</style>
+	</head>
+	<body>
+		
+	</body>
+	<script>
+	
+		var columns = 40;
+		var rows = 30;
+		
+		var table = document.createElement("table");
+		document.body.appendChild(table);
+		
+		var tds = [];
+		
+		for (var i = 0;i<rows;i++) {
+			var tr = table.insertRow();
+			var arr = [];
+			for (var j = 0;j<columns;j++) {
+				var td = tr.insertCell();
+				arr.push(td);
+			}
+			tds.push(arr);
+		}
+		
+		function Point(row,col){
+			if(row==undefined){
+				var c = Math.floor(Math.random()*columns);
+				var r = Math.floor(Math.random()*rows);
+				this.row = r;
+				this.col = c;
+			}else{
+				this.row = row;
+				this.col = col;
+			}
+		}
+		
+		var sh = new Point();
+		
+		var sBody = [];
+					
+		function createFood(){
+			var flag = false;
+			var f;
+			while (flag == false){
+				f = new Point();
+				flag = true;
+				if(f.row==sh.row&&f.col==sh.col){
+					flag = false;
+					continue;
+				}
+				for (var i = 0;i<sBody.length;i++) {
+					var bp = sBody[i];
+					if (f.row==bp.row&&f.col==bp.col) {
+						flag = false;
+						break;
+					}
+				}
+			}
+			return f;
+		}
+		
+		var food = createFood();
+		
+		function refreshUI(){
+			for (var i = 0;i<rows;i++) {
+				for (var j = 0;j<columns;j++) {
+					tds[i][j].style.backgroundColor = "";
+				}
+			}
+			tds[sh.row][sh.col].style.backgroundColor = "red";
+			for (var i = 0;i<sBody.length;i++) {
+				var bodyPoint = sBody[i];
+				tds[bodyPoint.row][bodyPoint.col].style.backgroundColor = "pink";
+			}
+			tds[food.row][food.col].style.backgroundColor = "green";
+		}
+		refreshUI();
+		
+		function sBodyMove(){
+			//如果没有蛇身，则直接返回(退出函数)
+			if(sBody.length == 0){
+				return;
+			}
+			for (var i = sBody.length-1;i>0;i--) {
+				sBody[i].row = sBody[i-1].row;
+				sBody[i].col = sBody[i-1].col;
+			}
+			sBody[0].row = sh.row;
+			sBody[0].col = sh.col;
+		}
+		
+		document.body.onkeydown = function(e){
+			switch (e.keyCode){
+				case 37:
+					//当蛇头正在向右移动时，不能直接改为向左移动
+					if (direction!="right") direction = "left";
+					break;
+				case 38:
+					if(direction!="down") direction = "up";
+					break;
+				case 39:
+					if(direction!="left") direction = "right";
+					break;
+				case 40:
+					if(direction!="up") direction = "down";
+					break;
+				default:
+					break;
+			}
+		}
+		
+		//生成一个初始移动方向。
+		var direction;
+		//判断初始蛇头的位置，如果在地图的左半边，就把初始移动
+		//方向设置为向右。
+		if(sh.col<columns/2){
+			direction = "right";
+		}else{
+			direction = "left";
+		}
+		
+		//启动一个定时器，控制蛇移动
+		var timer = setInterval(function(){
+			switch (direction){
+				case "left":
+					if(sh.col>0){
+						//判断移动目标点是否是蛇身，如果是蛇身则结束游戏
+						if(isBodyTouch(new Point(sh.row,sh.col-1))){
+							gameover();
+						}
+						if(food.row==sh.row&&food.col==sh.col-1){
+							var bp = new Point(sh.row,sh.col);
+							sBody.unshift(bp);
+							sh.col--;
+							food = createFood();
+						}else{
+							sBodyMove();
+							sh.col--;
+						}
+					}else{
+						gameover();
+					}
+					break;
+				case "up":
+					if(sh.row>0){
+						if(isBodyTouch(new Point(sh.row-1,sh.col))){
+							gameover();
+						}
+						if(food.row==sh.row-1&&food.col==sh.col){
+							var bp = new Point(sh.row,sh.col);
+							sBody.unshift(bp);
+							sh.row--;
+							food = createFood();
+						}else{
+							sBodyMove();
+							sh.row--;
+						}
+						
+					}else{
+						gameover();
+					}
+					break;
+				case "right":
+					if(sh.col<columns-1){
+						if(isBodyTouch(new Point(sh.row,sh.col+1))){
+							gameover();
+						}
+						if(food.row==sh.row&&food.col==sh.col+1){
+							var bp = new Point(sh.row,sh.col);
+							sBody.unshift(bp);
+							sh.col++;
+							food = createFood();
+						}else{
+							sBodyMove();
+							sh.col++;
+						}
+						
+					}else{
+						gameover();
+					}
+					break;
+				case "down":
+					if(sh.row<rows-1){
+						if(isBodyTouch(new Point(sh.row+1,sh.col))){
+							gameover();
+						}
+						if(food.row==sh.row+1&&food.col==sh.col){
+							var bp = new Point(sh.row,sh.col);
+							sBody.unshift(bp);
+							sh.row++;
+							food = createFood();
+						}else{
+							sBodyMove();
+							sh.row++;
+						}
+					}else{
+						gameover();
+					}
+					break;
+				default:
+					break;
+			}
+			refreshUI();
+		},100);
+		
+		
+		function gameover(){
+			//当游戏结束时，先停止控制移动的定时器，然后提示用户。
+			clearInterval(timer);
+			alert("GAMEOVER");
+		}
+		
+		//判断某个点是否是蛇身
+		function isBodyTouch(point){
+			//判断一个点是不是蛇身，需要拿所有的蛇身和这个点对比
+			//只要有一个蛇身和这个点重合，那么这个点就是蛇身，
+			//直接return true，后面的对比就不再执行了。也就是说
+			//如果这个点是某个蛇身，那么for循环根本走不完。当这个
+			//点不是蛇身时，for循环才可能走完，所以在for循环结束
+			//后，return false
+			for (var i = 0;i<sBody.length;i++) {
+				var bp = sBody[i];
+				if(bp.row==point.row&&bp.col==point.col){
+					return true;
+				}
+			}
+			return false;
+		}
+		
+	</script>
+</html>
